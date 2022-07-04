@@ -91,10 +91,6 @@ for (i in feature.idx){
 
 ##########remove reduanct strutures and chain#############
 
-# tmp <- raw.data %>%
-#   group_by(gene.symbol) %>%
-#   summarise(no_structure =length(unique(pdb)))
-## count the xl scores and number of chains for each pdb id
 filter.data <- function(raw.data){
   pdb.info <- raw.data %>% 
     group_by(pdb) %>%
@@ -291,19 +287,7 @@ cleandata.bak <- cleandata
 cleandata <- cbind(cleandata[,1:37],as.data.frame(numericl.feature.mat) )
 ### predict with randome forest ###
 set.seed(seed)
-# library(parallel) 
-# # # Calculate the number of cores
-# no_cores <- detectCores() - 1
-# # 
-# library(doParallel)
-# # # create the cluster for caret to use
-# cl <- makePSOCKcluster(no_cores)
-# registerDoParallel(cl)
-#rf.obj <- rfPredict.oob(cleandata, mtry.seq, ntree.seq, smote = T)
 rf.obj <- rfPredict(cleandata, mtry.seq, ntree.seq, cv.folds, repeat.times, smote = T)
-# stopCluster(cl)
-# registerDoSEQ()
-#rf.obj.nosmote <- rfPredict(cleandata, mtry.seq, ntree.seq, cv.folds, repeat.times, smote = F)
 ### permute features to get feature rank pvalue ###
 rf.par <-  rf.obj$fit$bestTune
 set.seed(seed)
@@ -325,24 +309,16 @@ pdb.info$keep.idx[match(pdb.keep$pdb, pdb.info$pdb)] <- 1
 if(write){
   #summarizeSample(cleandata, summary.file = summary.file)
   write.table(pdb.info, file = "result/bae.pdb.info.summary.txt", row.names = T, col.names = T, quote = F, sep = "\t")
-  # aafreqCalculation(cleandata, aa.freq.file = aa.freq.file)
   write.table(feature.data, file = featurerankres.file, row.names = T, col.names = T, quote = F, sep = "\t")
-  #write.table(feature.data.stackwitharomatic, file = "result/feature_stackwitharomatic_importance_summary.txt", row.names = T, col.names = T, quote = F, sep = "\t")
-  # write.table(new.feature.data, file = aafeaturerankres.file, row.names = T, col.names = T, quote = F, sep = "\t")
+  
   write.table(pred.dat, file = prediction.file, row.names = T, col.names = T, quote = F, sep = "\t")
   write.table(matrix(rf.obj$fit$results$ROC, ncol=length(mtry.seq), nrow=length(ntree.seq),dimnames = list(ntree.seq, mtry.seq)), file = rf.tune.roc.mat.file,row.names = T, col.names = T, quote = F, sep = "\t")
-  # write.table(new.pred.dat, file = aaprediction.file, row.names = T, col.names = T, quote = F, sep = "\t")
-  # write.table(localimp, file = aafeatureimp.file, row.names = T, col.names = T, quote = F, sep = "\t")
 }
 
 
 if(plot){
   width <- 3.42*1.5
   height <- 3.42*1.5
-  # ## plot model tune
-  # plot(rf.obj$fit, ylim=c(0,1))
-  # graph2office(file= modeltuneplot.file, type = "ppt")
-  # plotRF(rf.obj,tune.plot = T, modeltuneplot.file = modeltuneplot.file, rocplot.file = rocplot.file, width, height, seed)
   set.seed(seed)
   rocplot.file <- paste("plot/bae_rf_rocwithCI_mtry",rf.obj$fit$bestTune$mtry, "_ntree", rf.obj$fit$bestTune$ntree, ".pptx", sep="")
   plotROCwithCI(rf.obj$fit$pred$obs, rf.obj$fit$pred$xl, plot.file = rocplot.file, width, height)
@@ -352,9 +328,6 @@ if(plot){
   plotROCwithCI(glm.fit.obj$glm.fit$pred$obs, glm.fit.obj$glm.fit$pred$xl, plot.file = glm.rocplot.file, width, height)
   
   plotFeature(feature.data, feature.fill.color = feature.fill.color[c(4:9, 1:3)],featurerankplot.file="plot/bae_feature_importance_scatterplot.pptx", width=8, height=4)
-  #plotFeature(feature.data.stackwitharomatic, feature.fill.color = feature.fill.color, featurerankplot.stackwitharomatic.file, 8, 4)
-  
-  # plotFeature(new.feature.data[which(sapply(as.character(new.feature.data$group), nchar)==0), ], featurerankplot.file =  aafeaturerankplot.file, width = 9, height = height)
   
 }
 
