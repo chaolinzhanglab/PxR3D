@@ -1,14 +1,13 @@
 library(openxlsx)
 library(dplyr)
 require(resha)
-source("script/functions.R")
+source("functions.R")
 
 get_closet_nt_rbp <- function(pdbid, pdb.mat){
   file <- paste("raw/protein2rna/pdb", tolower(pdbid), ".interface.aa.txt", sep="")
   mat <- read.table(file, header=T, sep="\t", check.names = F, stringsAsFactors = F, comment.char = "", quote = "")
   mat$id_edited <- gsub("-", "",paste(mat$chain_id, mat$aa_id, sep="."))
-  #print(dim(pdb.mat))
-  #print(dim(mat))
+
   idx <- match( pdb.mat$idstr,mat$id_edited)
   if(!identical(idx, 1:dim(pdb.mat)[1])){
     print("Some aa does not have a match.")
@@ -37,14 +36,11 @@ feature.fill.color <- c("#8dd3c7", "#b3de69","#ffffb3", "#ae017e", "#dd3497", "#
 aa.color.code <- c("#991122", "#ffddee", "#aa88bb", "#774499", "#3377bb",  "#ddeeff",  "#77aacc", "#225577", "#449944", "#bbddbb", "#224422", "#77bb77", "#999933",  "#dddd33", "#eeee88", "#ffeedd", "#bb6622", "#dd2222", "#ee9999", "#992222")
 
 summary.file <- "result/bae_sample_summary.txt"
-# aa.freq.file <- "result/aa_interaction_frequency.txt"
 prediction.file <- "result/bae_RF_prediction_result.txt"
-# aaprediction.file <-  "result/RF_AA_prediction_result.txt"
 featurerankres.file <- "result/bae_feature_importance_summary.txt"
-# aafeaturerankres.file <- "result/aa_feature_importance_summary.txt"
-# aafeatureimp.file <- "result/aa_feature_localimp.txt"
  rf.tune.roc.mat.file <- "result/bae_mtry_ntree_roc_mat.txt"
-## add aa id to get closest nt
+
+ ## add aa id to get closest nt
 raw.data$aa_id <- unlist(lapply(raw.data$idstr, function(x) {unlist(strsplit(x,split = ".", fixed = T))[2]}))
 
 pdb.list <- unique(raw.data$pdb)
@@ -87,10 +83,8 @@ feature.idx <- 11:46
 for (i in feature.idx){
   hist(raw.data[,i],main=colnames(raw.data)[i], xlab=NULL)
 }
-## no need for standilization
 
-##########remove reduanct strutures and chain#############
-
+## count the xl scores and number of chains for each pdb id
 filter.data <- function(raw.data){
   pdb.info <- raw.data %>% 
     group_by(pdb) %>%
@@ -129,8 +123,7 @@ filter.data.chain <- function(raw.data){
 pdb.info <- filter.data(raw.data)
 pdb.keep <- pdb.info %>% group_by(gene.symbol) %>% top_n(mean_info, n=1) %>% arrange(gene.symbol)
 pdb.keep.id <- pdb.id.info$struct_id[pdb.id.info$keep.idx==1]
-## pum1 and pum2 has two id with exact same mean_info, only keep one randomly
-pdb.keep <- pdb.info[match(pdb.keep.id, pdb.info$pdb), ]
+info[match(pdb.keep.id, pdb.info$pdb), ]
 pdb.keep$RBD <- pdb.id.info$RBD[match(pdb.keep$pdb, pdb.id.info$struct_id)]
 # keep only one chain for each pdb id
 pdb.chain.info <- NULL
@@ -140,23 +133,9 @@ for (i in 1:length(pdb.keep$pdb)){
 chain.keep <- pdb.chain.info %>% group_by(pdb) %>% top_n(non_zero, n=1) 
 chain.keep <- as.data.frame(chain.keep)[c(1:11,13:61), ]
 
-#paste(chain.keep$chain, chain.keep$pdb,sep="_")
 keep.idx <- which(paste(raw.data$chain, raw.data$pdb,sep="_") %in% paste(chain.keep$chain, chain.keep$pdb,sep="_"))
 raw.data.filtered <- raw.data[keep.idx, ]
 raw.data.withnt.filtered <- raw.data.withnt[keep.idx, ]
-
-## check feature variance
-feature.var <- apply(raw.data.filtered[,11:46], 2, var)
-## all larger than 0, no need to filter 
-
-
-##########check the basic charateristics of the data#############
-raw.data.filtered$xl <- 0
-raw.data.filtered$xl[raw.data.filtered$xl_score>0] <- 1
-raw.data.withnt.filtered$nt <- unlist(lapply(raw.data.withnt.filtered$closest_nuc, function(x) return((strsplit(x, "-")[[1]][1]))))
-
-raw.data.filtered.bak <- raw.data.filtered
-raw.data.withnt.filtered.bak <- raw.data.withnt.filtered 
 
 
 ## remove the amino acids not contacting any RNA
@@ -168,106 +147,8 @@ keep.idx.out[keep.idx] <- 1
 final.keep.idx.out <- rep(0,dim(raw.data)[1])
 final.keep.idx.out[final.keep.idx] <- 1
 
-write.table(keep.idx.out, quote=F, sep="\t", file="result/bae.remove.reduandancy.txt")
-write.table(final.keep.idx.out, quote=F, sep="\t", file="result/bae.remove.reduandancy.remove.uncontacted.txt")
-
 raw.data.filtered <- raw.data.filtered[nonzerofeature.idx, ]
 raw.data.withnt.filtered <- raw.data.withnt.filtered[nonzerofeature.idx, ]
-
-#number of positive and negative samples
-table(raw.data.filtered$xl)
-## closet nt in the xl and nonxl group
-nt.comp.cnt <- cbind(nonxl=table(raw.data.withnt.filtered$nt[raw.data.withnt.filtered$xl_score==0]),xl=
-table(raw.data.withnt.filtered$nt[raw.data.withnt.filtered$xl_score>0]))
-
-## aa comp in the xl and nonxl group
-aa.names <- names(table(raw.data.withnt.filtered$aacode[raw.data.withnt.filtered$xl_score==0]))
-raw.data.withnt.filtered$aacode <- factor(raw.data.withnt.filtered$aacode, levels = aa.names)
-
-aa.comp.cnt <- cbind(nonxl=table(raw.data.withnt.filtered.bak$aacode[raw.data.withnt.filtered.bak$xl_score==0]),xl=
-                       table(raw.data.withnt.filtered.bak$aacode[raw.data.withnt.filtered.bak$xl_score>0]))
-
-write.table(nt.comp.cnt, quote=F, sep="\t", file="result/bae.nt.comp.cnt.txt")
-write.table(aa.comp.cnt, quote=F, sep="\t", file="result/bae.aa.comp.cnt.txt")
-## check close nt associated with each aa
-
-xl.aa.nt.cnt <- raw.data.withnt.filtered[raw.data.withnt.filtered$xl_score>0,-58] %>% 
-   group_by(aacode) %>%
-   summarise(A=length(which(nt=="A")), C=length(which(nt=="C")), G=length(which(nt=="G")), U=length(which(nt=="U")) )
-
-nonxl.aa.nt.cnt <- raw.data.withnt.filtered[raw.data.withnt.filtered$xl_score==0,-58] %>% 
-    group_by(aacode) %>%
-    summarise(A=length(which(nt=="A")), C=length(which(nt=="C")), G=length(which(nt=="G")), U=length(which(nt=="U")) )
-
-write.table(xl.aa.nt.cnt , quote=F, sep="\t", file="result/bae.xl.aa.nt.cnt.txt")
-write.table(nonxl.aa.nt.cnt , quote=F, sep="\t", file="result/bae.nonxl.aa.nt.cnt.txt")
-
-
-xl.aa.basestacking.cnt <- raw.data.withnt.filtered[raw.data.withnt.filtered$xl_score>0,c(9,43:46,60)] %>% 
-  group_by(aacode) %>%
-  summarise(A=length(which(base_aa_stack_A>0)), C=length(which(base_aa_stack_C>0)),G=length(which(base_aa_stack_G>0)),U=length(which(base_aa_stack_U>0)) )
-
-nonxl.aa.basestacking.cnt <- raw.data.withnt.filtered[raw.data.withnt.filtered$xl_score==0, c(9,43:46,60)] %>% 
-  group_by(aacode) %>%
-  summarise(A=length(which(base_aa_stack_A>0)), C=length(which(base_aa_stack_C>0)),G=length(which(base_aa_stack_G>0)),U=length(which(base_aa_stack_U>0)) )
-
-write.table(xl.aa.basestacking.cnt , quote=F, sep="\t", file="result/bae.xl.aa.basestacking.cnt.txt")
-write.table(nonxl.aa.basestacking.cnt , quote=F, sep="\t", file="result/bae.nonxl.aa.basestacking.cnt.txt")
-##check the features by group. no significant difference was found
-feature.idx <- 11:46
-for (i in feature.idx){
-  boxplot(list(xl=raw.data.filtered[raw.data.filtered$xl==1,i], nonxl=raw.data.filtered[raw.data.filtered$xl==0,i]),main=colnames(raw.data.filtered)[i], xlab=NULL, outline = F)
-}
-feature.idx <- 11:46
-for (i in feature.idx){
-  plot(density(raw.data.filtered[raw.data.filtered$xl==1,i]), col="red",main=colnames(raw.data.filtered)[i], xlab=NULL)
-  lines(density(raw.data.filtered[raw.data.filtered$xl==0,i]), add=T)
-}
-
-group.feature.mean <- raw.data.filtered %>% 
-   group_by(xl) %>%
-   summarise_at(vars(interact_A:base_aa_stack_U), function(x) mean(x[x>0]))
-as.data.frame(group.feature.mean)
-write.table(as.data.frame(group.feature.mean), quote=F, sep="\t", file="result/bae.group.feature.mean.txt")
-
-group.feature.cnt <- raw.data.filtered %>%
-  group_by(xl) %>%
-  summarise_at(vars(interact_A:base_aa_stack_U), function(x) length(which(x>0)))
-# write.table(as.data.frame(group.feature.cnt), quote=F, sep="\t", file="result/bae.group.feature.cnt.txt")
-
-#View(group.feature.cnt)
-
-feature.group.cnt <- cbind(apply(raw.data.filtered[,11:14], 1, function(x) {as.numeric(any(x>0))}),
-apply(raw.data.filtered[,15:18], 1, function(x) {as.numeric(any(x>0))}),
-apply(raw.data.filtered[,19:22], 1, function(x) {as.numeric(any(x>0))}),
-apply(raw.data.filtered[,23:26], 1, function(x) {as.numeric(any(x>0))}),
-apply(raw.data.filtered[,27:30], 1, function(x) {as.numeric(any(x>0))}),
-apply(raw.data.filtered[,31:34], 1, function(x) {as.numeric(any(x>0))}),
-apply(raw.data.filtered[,35:38], 1, function(x) {as.numeric(any(x>0))}),
-apply(raw.data.filtered[,39:42], 1, function(x) {as.numeric(any(x>0))}),
-apply(raw.data.filtered[,43:46], 1, function(x) {as.numeric(any(x>0))}))
-
-colnames(feature.group.cnt) <- c("interact", "hbond_po4:sidechain",
-                                 "hbond_po4:backbone",
-                                 "hbond_sugar:sidechain",
-                                 "hbond_sugar:backbone",
-                                 "hbond_base:sidechain",
-                                 "hbond_base:backbone",
-                                "base_aa_pair",
-                                "base_aa_stack")
-
-feature.group.cnt <- cbind(feature.group.cnt, raw.data.filtered$xl)
-colnames(feature.group.cnt)[10] <- "xl"
-
-
-
-feature.group.cnt <- as.data.frame(feature.group.cnt)
-
-group.feature.cnt <- feature.group.cnt %>% 
-  group_by(xl) %>%
-  summarise_at(vars(interact:base_aa_stack), sum)
-
-write.table(as.data.frame(group.feature.cnt), quote=F, sep="\t", file="result/bae.group.feature.cnt.txt")
 
 ## reorginze the data for input in RF prediction
 cleandata <- cbind(group=raw.data.filtered$xl, raw.data.filtered[,c(11:46, 9, 49:50)])
@@ -307,10 +188,8 @@ pdb.info$keep.idx <- 0
 pdb.info$keep.idx[match(pdb.keep$pdb, pdb.info$pdb)] <- 1
 
 if(write){
-  #summarizeSample(cleandata, summary.file = summary.file)
   write.table(pdb.info, file = "result/bae.pdb.info.summary.txt", row.names = T, col.names = T, quote = F, sep = "\t")
   write.table(feature.data, file = featurerankres.file, row.names = T, col.names = T, quote = F, sep = "\t")
-  
   write.table(pred.dat, file = prediction.file, row.names = T, col.names = T, quote = F, sep = "\t")
   write.table(matrix(rf.obj$fit$results$ROC, ncol=length(mtry.seq), nrow=length(ntree.seq),dimnames = list(ntree.seq, mtry.seq)), file = rf.tune.roc.mat.file,row.names = T, col.names = T, quote = F, sep = "\t")
 }
@@ -323,17 +202,9 @@ if(plot){
   rocplot.file <- paste("plot/bae_rf_rocwithCI_mtry",rf.obj$fit$bestTune$mtry, "_ntree", rf.obj$fit$bestTune$ntree, ".pptx", sep="")
   plotROCwithCI(rf.obj$fit$pred$obs, rf.obj$fit$pred$xl, plot.file = rocplot.file, width, height)
   
-  
   glm.rocplot.file <- paste("plot/bae_glm_rocwithCI_alpha",glm.fit.obj$glm.fit$bestTune$alpha, "_lambda", glm.fit.obj$glm.fit$bestTune$lambda, ".pptx", sep="")
   plotROCwithCI(glm.fit.obj$glm.fit$pred$obs, glm.fit.obj$glm.fit$pred$xl, plot.file = glm.rocplot.file, width, height)
   
   plotFeature(feature.data, feature.fill.color = feature.fill.color[c(4:9, 1:3)],featurerankplot.file="plot/bae_feature_importance_scatterplot.pptx", width=8, height=4)
   
 }
-
-raw.data.out <- cbind(raw.data, final.keep.idx=final.keep.idx.out)
-write.table(raw.data.out, file = "result/bae.sample.feature.matrix.txt", row.names = T, col.names = T, quote = F, sep = "\t")
-save.image("bae_analysis_v2.Rdata")
-
-
-write.table(matrix(rf.obj$fit$results$ROC, ncol=length(mtry.seq), nrow=length(ntree.seq),dimnames = list(ntree.seq, mtry.seq)), file = "result/Bae.rf.model.tune.txt",row.names = T, col.names = T, quote = F, sep = "\t")

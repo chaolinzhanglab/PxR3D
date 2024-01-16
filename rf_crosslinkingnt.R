@@ -1,5 +1,5 @@
-source("script/functions.R")
-data.file <- "raw/featuretable_v1.txt"
+source("functions.R")
+data.file <- "featuretable.txt"
 cv.folds <- 10
 repeat.times <- 1
 mtry.seq <- seq(1,20)
@@ -12,22 +12,6 @@ permute.time <- 2000
 feature.fill.color <- c("#8dd3c7", "#b3de69","#ffffb3", "#ae017e", "#dd3497", "#f768a1","#fa9fb5", "#fcc5c0","#fde0dd", "#fb8072", "#d7191c","#fdae61",  '#abd9e9',  "#2c7bb6")
 aa.color.code <- c("#991122", "#ffddee", "#aa88bb", "#774499", "#3377bb",  "#ddeeff",  "#77aacc", "#225577", "#449944", "#bbddbb", "#224422", "#77bb77", "#999933",  "#dddd33", "#eeee88", "#ffeedd", "#bb6622", "#dd2222", "#ee9999", "#992222")
 
-summary.file <- "result/sample_summary.txt"
-aa.freq.file <- "result/aa_interaction_frequency.txt"
-prediction.file <- "result/RF_prediction_result.txt"
-aaprediction.file <-  "result/RF_AA_prediction_result.txt"
-featurerankres.file <- "result/feature_importance_summary.txt"
-aafeaturerankres.file <- "result/aa_feature_importance_summary.txt"
-aafeatureimp.file <- "result/aa_feature_localimp.txt"
-rf.tune.roc.mat.file <- "result/mtry_ntree_roc_mat.txt"
-
-
-
-modelcomapareplot.file <- "plot/RF_onevstwolayer_roc_plot.pptx"
-featurerankplot.file <- "plot/feature_importance_scatterplot.pptx"
-aafeaturerankplot.file <- "plot/aa_feature_importance_scatterplot.pptx"
-featurelocalimpplot.file <- "plot/feature_localimp_heatmap.pptx"
-featurerankplot.stackwitharomatic.file <- "plot/feature_importance_scatterplot_stackwitharomatic.pptx"
 
 ### preprocess prediction and feature table ###
 process.obj <- preProcessData(data.file, varcutoff = 0)
@@ -42,48 +26,6 @@ xl.idx <- which(cleandata$group == "xl")
 
 interact.nt.idx.out <- rep(0, dim(rawdata)[1])
 interact.nt.idx.out[interact.nt.idx] <- 1
-write.table(interact.nt.idx.out, file="result/final.keep.idx.txt", sep="\t", quote = F, col.names = F, row.names = F)
-
-## check domain nt composition
-domain.xl.nt.freq <- matrix(0, nrow = length(levels(as.factor(rawdata.full$domain))), ncol = 4)
-rownames(domain.xl.nt.freq) <- levels(as.factor(rawdata.full$domain))
-colnames(domain.xl.nt.freq) <- c("A", "C", "G", "U")
-for (i in 1:length(levels(as.factor(rawdata.full$domain)))){
-  print(i)
-  domain.xl.nt.freq[i,] <- table(rawdata.full$nt[interact.nt.idx][xl.idx][which(rawdata.full$domain[interact.nt.idx][xl.idx] == levels(as.factor(rawdata.full$domain))[i])])
-  
-}
-write.table(domain.xl.nt.freq, "result/doman_xl_nt_frequency.txt" , quote = F, sep="\t")
-
-
-### summarize features ###
-
-for (i in interaction.code){
-  print(i)
-  aa.freq <- aafreqCalculation(cleandata, write = T,aa.freq.file = paste("result/", i, ".freq.txt", sep=""), key = i, aa.code = aa.code)
-}
-
-conform.freq.mat <- NULL
-for (i in 2:13){
-  print(i)
-  conform.freq.mat <- cbind(conform.freq.mat, conformfreqCalculation(cleandata, i))
-}
-conform.freq.mat <- rbind(conform.freq.mat, percentage = apply(conform.freq.mat, 2, sum)/rep(c(length(xl.idx), (dim(cleandata)[1] - length(xl.idx))), 12))
-
-write.table(conform.freq.mat, "result/conformation_frequency.txt" , quote = F, sep="\t")
-
-
-## check the upstream context and downstream context ## 
-
-upnt.xl.count <-  table(rawdata.full$upstreamNt[process.obj$interact.nt.idx][xl.idx])
-dnnt.xl.count <-  table(rawdata.full$dnstreamNt[process.obj$interact.nt.idx][xl.idx])
-
-upnt.nonxl.count <-  table(rawdata.full$upstreamNt[process.obj$interact.nt.idx][-xl.idx])
-dnnt.nonxl.count <-  table(rawdata.full$dnstreamNt[process.obj$interact.nt.idx][-xl.idx])
-
-write.table(cbind(upnt.xl.count,dnnt.xl.count, upnt.nonxl.count, dnnt.nonxl.count), file = "result/updnstream.nt.count.txt", sep = "\t", quote = F, col.names = T, row.names = T)
-
-
 
 ### predict with randome forest ###
 
@@ -157,9 +99,6 @@ feature.data.stackwitharomatic$group <- feature.data$group
 
 ### output summary results ###
 if(write){
-  summarizeSample(cleandata, summary.file = summary.file)
-  # aafreqCalculation(cleandata, aa.freq.file = aa.freq.file)
-  write.table(feature.data, file = featurerankres.file, row.names = T, col.names = T, quote = F, sep = "\t")
   write.table(feature.data.stackwitharomatic, file = "result/feature_stackwitharomatic_importance_summary.txt", row.names = T, col.names = T, quote = F, sep = "\t")
   write.table(feature.data.rm.stacking, file = "result/feature_rm.stacking_rm.nt_importance_summary.txt", row.names = T, col.names = T, quote = F, sep = "\t")
   
@@ -170,10 +109,6 @@ if(write){
 if(plot){
   width <- 3.42*1.5
   height <- 3.42*1.5
-  # ## plot model tune
-  # plot(rf.obj$fit, ylim=c(0,1))
-  # graph2office(file= modeltuneplot.file, type = "ppt")
-  # plotRF(rf.obj,tune.plot = T, modeltuneplot.file = modeltuneplot.file, rocplot.file = rocplot.file, width, height, seed)
   set.seed(seed)
   rocplot.file <- paste("plot/rf_rocwithCI_mtry",rf.obj$fit$bestTune$mtry, "_ntree", rf.obj$fit$bestTune$ntree, ".pptx", sep="")
   plotROCwithCI(rf.obj$fit$pred$obs, rf.obj$fit$pred$xl, plot.file = rocplot.file, width, height)
