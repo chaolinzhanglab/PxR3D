@@ -1,5 +1,5 @@
 source("functions.R")
-data.file <- "featuretable.txt"
+data.file <- "example/featuretable.nt.txt"
 cv.folds <- 10
 repeat.times <- 1
 mtry.seq <- seq(1,20)

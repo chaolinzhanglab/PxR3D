@@ -1,25 +1,5 @@
-library(openxlsx)
-library(dplyr)
-require(resha)
 source("functions.R")
-
-get_closet_nt_rbp <- function(pdbid, pdb.mat){
-  file <- paste("raw/protein2rna/pdb", tolower(pdbid), ".interface.aa.txt", sep="")
-  mat <- read.table(file, header=T, sep="\t", check.names = F, stringsAsFactors = F, comment.char = "", quote = "")
-  mat$id_edited <- gsub("-", "",paste(mat$chain_id, mat$aa_id, sep="."))
-
-  idx <- match( pdb.mat$idstr,mat$id_edited)
-  if(!identical(idx, 1:dim(pdb.mat)[1])){
-    print("Some aa does not have a match.")
-  }
-  mat.match <- as.data.frame(matrix(0, ncol = 9, nrow=dim(pdb.mat)[1]))
-  colnames(mat.match) <- colnames(mat)[5:12]
-  mat.match[which(!is.na(idx)),] <- mat[idx, 5:12]
-  return(cbind(pdb.mat,mat.match))
-}
-
-
-data.file <- "raw/PDB.Bae.XL.3dna.summary.xlsx"
+data.file <- "example/featuretable.aa.xlsx"
 raw.data <- read.xlsx(data.file,sheet=1)
 pdb.id.info <- read.xlsx(data.file, sheet=2)
 aa.code.name <- read.xlsx(data.file, sheet=3)

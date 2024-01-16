@@ -1,10 +1,8 @@
-# library(openxlsx)
+library(openxlsx)
 library(caret)
-# library(plotROC)
 library(randomForest)
 library(pROC)
 # library(corrplot)
-library(doParallel)
 library(devtools)
 library(magrittr)
 library(glmnet)
@@ -16,109 +14,8 @@ library(MLmetrics)
 library(reshape2)
 library(ggplot2)
 library(ggforce)
-library(parallel) 
-#============================================================================================
-#Cross validataion using Gradient boosting machine
-#============================================================================================
-gbm_cv <- function(gbm.dat, n.trees=1000, cv.folds=5, interaction.depth=1, 
-                   shrinkage= 0.001, bag.fraction=1, n.cores=1, verbose=TRUE, weights=NULL, SMOTE = T)
-{
-  # split samples
-  sample.idx.group <- split(1:nrow(gbm.dat), gbm.dat$group)
-  cv.idx.group <- list()
-  for (i in 1:length(sample.idx.group)){
-    cv.idx.group[[i]] <- sample(1:cv.folds, length(sample.idx.group[[i]]), replace=TRUE)
-  }
-  
-  cv.idx <- as.integer(rep(0, nrow(gbm.dat)))
-  cv.idx[unlist(sample.idx.group)] <- unlist(cv.idx.group)
-  #gbm.dat.cv <- cbind(data.frame(cv.idx=cv.idx), gbm.dat)
-  
-  # cross validation
-  rl.gbm.cv <- list()
-  gbm.pred <- character(nrow(gbm.dat))
-  for (i in 1:cv.folds){
-    gbm.dat.train <- gbm.dat[cv.idx != i, ]
-    # gbm.dat.test <- gbm.dat[cv.idx == i, ]
-    if(SMOTE){
-      gbm.dat.train.SMOTE <- SMOTE(group ~ ., gbm.dat.train, perc.over = 1000, perc.under =100)
-      gbm.dat.train <- gbm.dat.train.SMOTE
-    }
-    
-    tmp.dat <- filterbyvar(gbm.dat.train)
-    gbm.dat.train <- tmp.dat$dat
-    var.idx <- tmp.dat$idx
-    gbm.dat.test <- gbm.dat[cv.idx == i, var.idx]
-    if(is.null(weights)){
-      cur.train <- gbm.fit(as.matrix(gbm.dat.train[,-1]), gbm.dat.train[,1], 
-                           distribution = 'multinomial', n.trees = n.trees,
-                           interaction.depth = interaction.depth, shrinkage = shrinkage,
-                           bag.fraction = bag.fraction, verbose = verbose, n.minobsinnode=3)
-    }else{
-      cur.train <- gbm.fit(as.matrix(gbm.dat.train[,-1]), gbm.dat.train[,1], 
-                           distribution = 'multinomial', n.trees = n.trees,
-                           interaction.depth = interaction.depth, shrinkage = shrinkage,
-                           bag.fraction = bag.fraction, verbose = verbose, n.minobsinnode=3, w=weights)
-    }
-    
-    cur.test <- predict(cur.train, gbm.dat.test, n.trees=n.trees, type="response")
-    cur.pred <- colnames(cur.test)[apply(cur.test, 1, which.max)]
-    gbm.pred[cv.idx == i] <- cur.pred
-    rl.gbm.cv[[i]] <- cur.train
-  }
-  acc <- sum(as.character(gbm.dat$group) == gbm.pred) / nrow(gbm.dat)
-  acc.group <- split(as.character(gbm.dat$group) == gbm.pred, as.character(gbm.dat$group))
-  acc.group <- sapply(acc.group, function(x) sum(x)/length(x))
-  
-  list(rl.gbm.cv= rl.gbm.cv, gbm.pred = gbm.pred, cv.idx = cv.idx, acc=acc, acc.group=acc.group)	
-}
-
-#============================================================================================
-#Cross validataion using supporting vector machine
-#============================================================================================
-svm_cv <- function(gbm.dat, cv.folds=5, cost, gamma, n.cores=1, verbose=TRUE, SMOTE=FALSE, ...)
-{
-  # split samples
-  sample.idx.group <- split(1:nrow(gbm.dat), gbm.dat$group)
-  cv.idx.group <- list()
-  for (i in 1:length(sample.idx.group)){
-    cv.idx.group[[i]] <- sample(1:cv.folds, length(sample.idx.group[[i]]), replace=TRUE)
-  }
-  
-  cv.idx <- as.integer(rep(0, nrow(gbm.dat)))
-  cv.idx[unlist(sample.idx.group)] <- unlist(cv.idx.group)
-  #gbm.dat.cv <- cbind(data.frame(cv.idx=cv.idx), gbm.dat)
-  
-  # cross validation
-  rl.gbm.cv <- list()
-  gbm.pred <- character(nrow(gbm.dat))
-  for (i in 1:cv.folds){
-    cat('fold:',i,'\r')
-    gbm.dat.train <- gbm.dat[cv.idx != i, ]
-    # gbm.dat.test <- gbm.dat[cv.idx == i, ]
-    ##select features have var larger than var.cutoff
-    if(SMOTE){
-      gbm.dat.train.SMOTE <- SMOTE(group ~ ., gbm.dat.train, perc.over = 1000, perc.under =100)
-      gbm.dat.train <- gbm.dat.train.SMOTE
-    }
-    tmp.dat <- filterbyvar(gbm.dat.train)
-    gbm.dat.train <- tmp.dat$dat
-    var.idx <- tmp.dat$idx
-    gbm.dat.test <- gbm.dat[cv.idx == i, var.idx]
-    
-    cur.train <- svm(as.matrix(gbm.dat.train[,-1]), gbm.dat.train[,1], gamma = gamma, cost = cost, ...)
-    cur.pred <- predict(cur.train, as.matrix(gbm.dat.test[,-1]))
-    gbm.pred[cv.idx == i] <- as.character(cur.pred)
-    rl.gbm.cv[[i]] <- cur.train
-  }	
-  cat('fold:',i,'\n')
-  acc <- sum(as.character(gbm.dat$group) == gbm.pred) / nrow(gbm.dat)
-  acc.group <- split(as.character(gbm.dat$group) == gbm.pred, as.character(gbm.dat$group))
-  acc.group <- sapply(acc.group, function(x) sum(x)/length(x))
-  
-  list(rl.svm.cv= rl.gbm.cv, svm.pred = gbm.pred, cv.idx = cv.idx, acc=acc, acc.group=acc.group)	
-}
-
+library(dplyr)
+require(resha)
 
 #============================================================================================
 #Cross validataion using generalized linear regression model
@@ -166,51 +63,6 @@ glm_cv <- function(gbm.dat, cv.folds=5, verbose=TRUE, SMOTE=F, ...)
   list(rl.glm.cv= rl.gbm.cv, glm.pred = gbm.pred, cv.idx = cv.idx, acc=acc, acc.group=acc.group)	
 }
 
-#============================================================================================
-#Cross validataion using decision tree
-#============================================================================================
-rtree_cv <- function(gbm.dat, cv.folds=5, verbose=TRUE, SMOTE=F, ...)
-{
-  # split samples
-  sample.idx.group <- split(1:nrow(gbm.dat), gbm.dat$group)
-  cv.idx.group <- list()
-  for (i in 1:length(sample.idx.group)){
-    cv.idx.group[[i]] <- sample(1:cv.folds, length(sample.idx.group[[i]]), replace=TRUE)
-  }
-  
-  cv.idx <- as.integer(rep(0, nrow(gbm.dat)))
-  cv.idx[unlist(sample.idx.group)] <- unlist(cv.idx.group)
-  #gbm.dat.cv <- cbind(data.frame(cv.idx=cv.idx), gbm.dat)
-  
-  # cross validation
-  rl.gbm.cv <- list()
-  gbm.pred <- character(nrow(gbm.dat))
-  for (i in 1:cv.folds){
-    cat('fold:',i,'\r')
-    gbm.dat.train <- gbm.dat[cv.idx != i, ]
-    # gbm.dat.test <- gbm.dat[cv.idx == i, ]
-    ## select features that has var larger than 0.05
-    
-    if(SMOTE){
-      gbm.dat.train.SMOTE <- SMOTE(group ~ ., gbm.dat.train, perc.over = 1000, perc.under =100)
-      gbm.dat.train <- gbm.dat.train.SMOTE
-    }
-    tmp.dat <- filterbyvar(gbm.dat.train)
-    gbm.dat.train <- tmp.dat$dat
-    var.idx <- tmp.dat$idx
-    gbm.dat.test <- gbm.dat[cv.idx == i, var.idx]
-    cur.train <- rpart(group~.,as.data.frame(gbm.dat.train), ...)
-    cur.pred <- predict(cur.train, gbm.dat.test[,-1], type="class")
-    gbm.pred[cv.idx == i] <- as.character(cur.pred)
-    rl.gbm.cv[[i]] <- cur.train
-  }	
-  cat('fold:',i,'\n')
-  acc <- sum(as.character(gbm.dat$group) == gbm.pred) / nrow(gbm.dat)
-  acc.group <- split(as.character(gbm.dat$group) == gbm.pred, as.character(gbm.dat$group))
-  acc.group <- sapply(acc.group, function(x) sum(x)/length(x))
-  
-  list(rl.rtree.cv= rl.gbm.cv, rtree.pred = gbm.pred, cv.idx = cv.idx, acc=acc, acc.group=acc.group)	
-}
 
 #============================================================================================
 # filter features by variance
@@ -750,133 +602,6 @@ summarizeSample <- function(pdbrna.data.clean, write = T, summary.file){
 #============================================================================================
 
 
-rf_twolevel <- function(data, aa.code, mtry, ntree, mtry.seq, smote = T, perc.over, perc.under,...){
-  if(smote){
-    # set.seed(10)
-    data.SMOTE <- SMOTE(group ~ ., data, perc.over = perc.over, perc.under =perc.under)
-    data <- data.SMOTE
-  }
-  rf.firstlevel.obj <- list()
-  new.data <- NULL
-  for (j in 1:length(aa.code)){
-    print(aa.code[j])
-    aa.idx <- grep(aa.code[j], colnames(data))
-    
-    rf.firstlevel.obj[[aa.code[j]]] <- randomForest_feature_construction(data, aa.idx = aa.idx, mtry.seq = mtry.seq, ... )
-    new.data <- cbind(new.data, rf.firstlevel.obj[[aa.code[j]]]$new.train.data)
-  }
-  new.data[new.data == "xl"] <- 1
-  new.data[new.data == "nonxl"] <- 0
-  colnames(new.data) <- aa.code
-  new.data <- cbind(data[, 1:13], new.data)
-  rf.twolevel.obj <- randomForest(as.matrix(new.data[,-1]), new.data[,1], localImp = T, mtry= mtry, ntree = ntree)
-  localimp <- t(rf.twolevel.obj$localImportance)
-  list(rf.firstlevel.obj = rf.firstlevel.obj, rf.twolevel.obj = rf.twolevel.obj, localimp = localimp, new.feature.mat = new.data)
-}
-#============================================================================================
-
-rf_twolevel_cv_tune <- function(data, mtry.twolevel.seq, ntree.twolevel.seq,metric, ...){
-  res.list <- list()
-  acc.res <- matrix(0, ncol=24, nrow=length(mtry.twolevel.seq) * length(ntree.twolevel.seq))
-  colnames(acc.res) <- c("mtry", "ntree", "acc", "nonxl", "xl", c("Accuracy", "Kappa", "AccuracyLower","AccuracyUpper","AccuracyNull","AccuracyPValue","McnemarPValue","Sensitivity","Specificity","Pos Pred Value","Neg Pred Value","Precision","Recall","F1","Prevalence","Detection Rate","Detection Prevalence","Balanced Accuracy"), "AUC")
-  acc.res <- as.data.frame(acc.res)
-  for (i in 1:length(mtry.twolevel.seq)){
-    for (j in 1:length(ntree.twolevel.seq)){
-      # set.seed(seed)
-      print(mtry.twolevel.seq[i])
-      print(ntree.twolevel.seq[j])
-      tmp <- rf_twolevel_cv(data, mtry=mtry.twolevel.seq[i], ntree=ntree.twolevel.seq[j], ...)
-      res.list[[paste("mtry=",mtry.twolevel.seq[i]," - ntree=",ntree.twolevel.seq[j],sep="" )]] <- tmp
-      acc.res[(i-1)*length(ntree.twolevel.seq) + j, ] <- c(mtry.twolevel.seq[i], ntree.twolevel.seq[j], tmp$acc, tmp$acc.group, tmp$evaluation, tmp$auc)
-      
-    }
-  }
-  
-  res.list$acc <- acc.res
-  res.list$besttune <- acc.res[which.max(acc.res[,match(metric, colnames(acc.res))]), 1:2]
-  # res.list$besttune <- acc.res[which.max(acc.res$xl), 1:2]
-  res.list
-}
-
-#============================================================================================
-
-rf_twolevel_cv <- function(data, smote = T, aa.code, cv.folds, mtry, ntree, mtry.seq,perc.over, perc.under, ...){
-  
-  sample.idx.group <- split(1:nrow(data), data$group)
-  cv.idx.group <- list()
-  # set.seed(10)
-  for (i in 1:length(sample.idx.group)){
-    cv.idx.group[[i]] <- sample(1:cv.folds, length(sample.idx.group[[i]]), replace=TRUE)
-  }
-  cv.idx <- as.integer(rep(0, nrow(data)))
-  cv.idx[unlist(sample.idx.group)] <- unlist(cv.idx.group)
-  
-  # cross validation
-  rf.cv <- list()
-  rf.pred <- character(nrow(data))
-  names(rf.pred) <- rownames(data)
-  pred.prob <- matrix(0, nrow = nrow(data), ncol = 3)
-  colnames(pred.prob) <- c("obs", levels(data$group))# rowIndex <- NULL
-  rownames(pred.prob) <- rownames(data)
-  pred.prob <- as.data.frame(pred.prob)
-  pred.prob$obs <- data$group
-  
-  for (i in 1:cv.folds){
-    print(i)
-    dat.train <- data[cv.idx != i, ]
-    dat.test <- data[cv.idx == i, ]
-    if(smote){
-      # set.seed(10)
-      dat.train.SMOTE <- SMOTE(group ~ ., dat.train, perc.over = perc.over, perc.under = perc.under)
-      dat.train <- dat.train.SMOTE
-    }
-    
-    cur.train.sub <- list()
-    new.train.data <- NULL
-    new.test.data <- NULL
-    
-    ## in each fold, determine the best parameters using CV in randomforest model
-    for (j in 1:length(aa.code)){
-      print(aa.code[j])
-      aa.idx <- grep(aa.code[j], colnames(dat.train))
-      cur.train.sub[[aa.code[j]]] <- randomForest_feature_construction(dat.train, dat.test, aa.idx,mtry.seq = mtry.seq, ... )
-      new.train.data <- cbind(new.train.data, cur.train.sub[[aa.code[j]]]$new.train.data)
-      new.test.data <- cbind(new.test.data, cur.train.sub[[aa.code[j]]]$new.test.data)
-      
-    }
-    
-    ## get new feature data 
-    new.train.data[new.train.data == "xl"] <- 1
-    new.train.data[new.train.data == "nonxl"] <- 0
-    new.test.data[new.test.data == "xl"] <- 1
-    new.test.data[new.test.data == "nonxl"] <- 0
-    colnames(new.train.data) <- aa.code
-    new.train.data <- cbind(dat.train[, 1:13], new.train.data)
-    colnames(new.test.data) <- aa.code
-    new.test.data <- cbind(dat.test[,1:13], new.test.data)
-    
-    ## train new feature data on second level
-    cur.train.leveltwo <- randomForest(as.matrix(new.train.data[,-1]), new.train.data[,1], mtry= mtry, ntree=ntree)
-    cur.pred <- predict(cur.train.leveltwo, as.matrix(new.test.data[,-1]))
-    cur.pred.prob <- predict(cur.train.leveltwo, as.matrix(new.test.data[,-1]), type="prob")
-    rf.pred[cv.idx == i] <- as.character(cur.pred)
-    pred.prob[cv.idx == i, -1] <- cur.pred.prob
-    rf.cv[[i]] <- cur.train.leveltwo
-  }	
-  
-  
-  acc <- sum(as.character(data$group) == rf.pred) / nrow(data)
-  acc.group <- split(as.character(data$group) == rf.pred, as.character(data$group))
-  acc.group <- sapply(acc.group, function(x) sum(x)/length(x))
-  
-  auc <- roc(pred.prob$obs, pred.prob$xl)$auc[1]
-  ## calculate precesion and recall
-  cm <- confusionMatrix(factor(rf.pred, levels=levels(data$group)), data$group)
-  evaluation <- c(cm$overall, cm$byClass)
-  list(rf.cv= rf.cv, rf.pred = rf.pred, rf.pred.prob = pred.prob, cv.idx = cv.idx, acc=acc, acc.group=acc.group, auc = auc, evaluation = evaluation)
-}
-
-
 #============================================================================================
 
 randomForest_feature_construction <- function(dat.train, dat.test = NULL, aa.idx, mtry.seq, ...){
@@ -1004,122 +729,6 @@ randomforest_cv <- function(gbm.dat, cv.folds=5, verbose=TRUE, SMOTE=F, calAUC =
 #============================================================================================
 
 
-gbm_twolevel_cv_tune <- function(data, mtry.twolevel.seq, ntree.twolevel.seq, ...){
-  res.list <- list()
-  acc.res <- matrix(0, ncol=5, nrow=length(mtry.twolevel.seq) * length(ntree.twolevel.seq))
-  colnames(acc.res) <- c("mtry", "ntree", "acc", "nonxl", "xl")
-  acc.res <- as.data.frame(acc.res)
-  for (i in 1:length(mtry.twolevel.seq)){
-    for (j in 1:length(ntree.twolevel.seq)){
-      # set.seed(seed)
-      print(mtry.twolevel.seq[i])
-      print(ntree.twolevel.seq[j])
-      tmp <- gbm_twolevel_cv(data, mtry=mtry.twolevel.seq[i], ntree=ntree.twolevel.seq[j], ...)
-      res.list[[paste("mtry=",mtry.twolevel.seq[i]," - ntree=",ntree.twolevel.seq[j],sep="" )]] <- tmp
-      acc.res[(i-1)*length(ntree.twolevel.seq) + j, ] <- c(mtry.twolevel.seq[i], ntree.twolevel.seq[j], tmp$acc, tmp$acc.group)
-      
-    }
-  }
-  res.list$acc <- acc.res
-  res.list$besttune <- acc.res[which.max(acc.res$xl), 1:2]
-  res.list
-}
-#============================================================================================
-
-
-gbm_twolevel_cv <- function(gbm.dat, smote= T, cv.folds=5, verbose=TRUE, aa.code, mtry, ntree,perc.over, perc.under, ...)
-{
-  # set.seed(30)
-  # split samples
-  sample.idx.group <- split(1:nrow(gbm.dat), gbm.dat$group)
-  cv.idx.group <- list()
-  for (i in 1:length(sample.idx.group)){
-    cv.idx.group[[i]] <- sample(1:cv.folds, length(sample.idx.group[[i]]), replace=TRUE)
-  }
-  
-  cv.idx <- as.integer(rep(0, nrow(gbm.dat)))
-  cv.idx[unlist(sample.idx.group)] <- unlist(cv.idx.group)
-  #gbm.dat.cv <- cbind(data.frame(cv.idx=cv.idx), gbm.dat)
-  
-  # cross validation
-  rf.cv <- list()
-  rf.pred <- character(nrow(gbm.dat))
-  names(rf.pred) <- rownames(gbm.dat)
-  pred.prob <- matrix(0, nrow = nrow(gbm.dat), ncol = 3)
-  colnames(pred.prob) <- c("obs", levels(gbm.dat$group))# rowIndex <- NULL
-  rownames(pred.prob) <- rownames(gbm.dat)
-  pred.prob <- as.data.frame(pred.prob)
-  pred.prob$obs <- gbm.dat$group
-  
-  
-  for (i in 1:cv.folds){
-    print(i)
-    gbm.dat.train <- gbm.dat[cv.idx != i, ]
-    gbm.dat.test <- gbm.dat[cv.idx == i, ]
-    new.train.data <- NULL
-    new.test.data <- NULL
-    if(smote){
-      # set.seed(10)
-      gbm.dat.train.SMOTE <- SMOTE(group ~ ., gbm.dat.train, perc.over = perc.over, perc.under = perc.under)
-      gbm.dat.train <- gbm.dat.train.SMOTE
-    }
-    
-    ### train first level
-    for (j in 1:length(aa.code)){
-      
-      print(aa.code[j])
-      aa.idx <- grep(aa.code[j], colnames(gbm.dat.train))
-      train.data <- gbm.dat.train[, c(1, aa.idx )]
-      test.data <- gbm.dat.test[, aa.idx]
-      
-      # first level using gbm
-      gbmGrid <-  expand.grid(interaction.depth = seq(1,5,2), 
-                              n.trees = 10^seq(1,3), 
-                              shrinkage = 0.1,
-                              n.minobsinnode = 1:3)
-      ## ntree 100, minbosinnode 5 interaction.depth 1
-      cur.pred.sub <- caret.wrap(train.data, method="gbm", cv.folds = 5, repeat.times = 1, SMOTE = F, tuneGrid=gbmGrid, metric = "ROC")
-      
-      #print("done")
-      
-      new.train.data <- cbind(new.train.data,   cur.pred.sub$fit$pred$xl[match(1:dim(train.data)[1], cur.pred.sub$fit$pred$rowIndex)])
-      new.test.data <- cbind(new.test.data, predict(cur.pred.sub$fit$finalModel, as.matrix(test.data), n.trees = cur.pred.sub$fit$bestTune$n.trees, type = "response"))
-      
-    }
-    
-    new.train.data[new.train.data >= 0.5] <- 1
-    new.train.data[new.train.data < 0.5] <- 0
-    colnames(new.train.data) <- aa.code
-    new.train.data <- cbind(gbm.dat.train[, 1:13], new.train.data)
-    
-    ## glmnet give the smaller prob as group xl
-    new.test.data[new.test.data < 0.5] <- 0
-    new.test.data[new.test.data >= 0.5] <- 1
-    colnames(new.test.data) <- aa.code
-    new.test.data <- cbind(gbm.dat.test[,1:13], new.test.data)
-    # 
-    # rfGrid <- expand.grid(.mtry= seq(1,5), .ntree=c(10,100,1000))
-    # cur.train <- caret.wrap(new.train.data, method=customRF, cv.folds = 5, repeat.times = 1, SMOTE = T, tuneGrid=rfGrid, metric = "ROC")
-    # 
-    # cur.pred <- predict( cur.train$fit$finalModel, new.test.data[, -1])
-    # 
-    cur.train.leveltwo <- randomForest(as.matrix(new.train.data[,-1]), new.train.data[,1], mtry= mtry, ntree=ntree,...)
-    cur.pred <- predict(cur.train.leveltwo, as.matrix(new.test.data[,-1]))
-    cur.pred.prob <- predict(cur.train.leveltwo, as.matrix(new.test.data[,-1]), type="prob")
-    rf.pred[cv.idx == i] <- as.character(cur.pred)
-    pred.prob[cv.idx == i, -1] <- cur.pred.prob
-    rf.cv[[i]] <- cur.train.leveltwo
-    
-  }
-  
-  cat('fold:',i,'\n')
-  acc <- sum(as.character(gbm.dat$group) == rf.pred) / nrow(gbm.dat)
-  auc <- auc(roc(gbm.dat$group, pred.prob$xl))
-  acc.group <- split(as.character(gbm.dat$group) == rf.pred, as.character(gbm.dat$group))
-  acc.group <- sapply(acc.group, function(x) sum(x)/length(x))
-  
-  list(rf.cv= rf.cv, rf.pred = rf.pred, rf.pred.prob = pred.prob, cv.idx = cv.idx, acc=acc, acc.group=acc.group, auc=auc)	
-}
 #============================================================================================
 
 boxplot.localimp <- function(localimp, xl.idx, aa.color.code= NULL, outfile = NULL,...){
@@ -1225,3 +834,19 @@ extendrawdata <- function(rawdata){
   }
   rawdata
 }
+
+get_closet_nt_rbp <- function(pdbid, pdb.mat){
+  file <- paste("raw/protein2rna/pdb", tolower(pdbid), ".interface.aa.txt", sep="")
+  mat <- read.table(file, header=T, sep="\t", check.names = F, stringsAsFactors = F, comment.char = "", quote = "")
+  mat$id_edited <- gsub("-", "",paste(mat$chain_id, mat$aa_id, sep="."))
+
+  idx <- match( pdb.mat$idstr,mat$id_edited)
+  if(!identical(idx, 1:dim(pdb.mat)[1])){
+    print("Some aa does not have a match.")
+  }
+  mat.match <- as.data.frame(matrix(0, ncol = 9, nrow=dim(pdb.mat)[1]))
+  colnames(mat.match) <- colnames(mat)[5:12]
+  mat.match[which(!is.na(idx)),] <- mat[idx, 5:12]
+  return(cbind(pdb.mat,mat.match))
+}
+
