@@ -1,21 +1,21 @@
-library(openxlsx)
-library(caret)
-library(randomForest)
-library(pROC)
+suppressMessages(library(openxlsx, quietly=T))
+suppressMessages(library(caret,quietly=T))
+suppressMessages(library(randomForest, quietly=T))
+suppressMessages(library(pROC, quietly=T))
 # library(corrplot)
-library(devtools)
-library(magrittr)
-library(glmnet)
-library(DMwR)
+suppressMessages(library(devtools, quietly=T))
+suppressMessages(library(magrittr, quietly=T))
+suppressMessages(library(glmnet, quietly=T))
+suppressMessages(library(DMwR, quietly=T))
 # devtools::install_github("tomwenseleers/export")
-library(export)
-library(gplots)
-library(MLmetrics)
-library(reshape2)
-library(ggplot2)
-library(ggforce)
-library(dplyr)
-require(resha)
+suppressMessages(library(export, quietly=T))
+suppressMessages(library(gplots, quietly=T))
+suppressMessages(library(MLmetrics, quietly=T))
+suppressMessages(library(reshape2, quietly=T))
+suppressMessages(library(ggplot2, quietly=T))
+suppressMessages(library(ggforce, quietly=T))
+suppressMessages(library(dplyr, quietly=T))
+#require(resha)
 
 #============================================================================================
 #Cross validataion using generalized linear regression model
@@ -197,7 +197,7 @@ rf.permutation <- function(dat, SMOTE, permute.time, rf.par, ... ){
   feature.imp.scale.mat <- feature.imp.mat
   pb <- txtProgressBar(min = 0, max = permute.time-1, style = 3)
   for (i in 1:permute.time){
-    # progress(i-1, progress.bar = TRUE)
+    #progress(i-1, progress.bar = TRUE)
     #Sys.sleep(0.01)
     permute.fit <- rf.permutation.sinlge(dat, rf.par, permute = T, SMOTE = SMOTE )
     feature.imp.mat[,i] <- permute.fit$imp
@@ -343,11 +343,13 @@ randomforest_cv_pred.imp <- function(gbm.dat, cv.folds=5, verbose=TRUE, aa.code,
 plotROCwithCI <- function(obs, pred, plot.file, width, height, ...){
   rf.fit.rocobj <- roc(obs, pred, ci=T, legacy.axes = T, asp = 0,identity.lty=6, plot = T)
   ciobj <- ci.se(rf.fit.rocobj, specificities=seq(0, 1, 0.02)) 
+  pdf(plot.file)
   plot(ciobj, type="shape", border = NA)
   ### needs to re-add roc curve because of the overlay of color
   plot(rf.fit.rocobj, col="steelblue", add = T)
   text(x=c(0.15,0.15), y=c(0.1, 0.05), labels = c(paste("AUC = ", round(rf.fit.rocobj$auc, 3)), paste( "95% CI : ", round(rf.fit.rocobj$ci[1],3), "-", round(rf.fit.rocobj$ci[3],3), sep="")))
-  graph2ppt(file= plot.file, width = width, height = height, ...)
+  #graph2ppt(file= plot.file, width = width, height = height, ...)
+  dev.off()
 }
 
 #============================================================================================
@@ -792,7 +794,7 @@ extendrawdata <- function(rawdata){
   }
   for (i in unique(rawdata$PDB)){
     idx <- which(rawdata$PDB == i)
-    print(length(idx))
+    #print(length(idx))
     for (j in idx){
       if(j == min(idx)){
         rawdata$upstreamNt[j] <- toupper(as.character(rawdata$ntcode[j]))

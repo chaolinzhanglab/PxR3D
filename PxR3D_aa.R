@@ -1,7 +1,7 @@
 source("functions.R")
 
-options(warn=-1)
-suppressMessages(library(getopt, quietly=T))
+options(warn = -1)
+suppressMessages(library(getopt, quietly = T))
 #argument mask: 0 - no argument, 1 - required argument, 2 - optional argument
 
 optionSpec = matrix(c(

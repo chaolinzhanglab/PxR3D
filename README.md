@@ -10,15 +10,15 @@ Once installed, specify the directory of 3DNA in `3dna2matirx_wrapper.pl` to run
 `3dna2matrix_wrapper.pl [options] <in.pdb> <out.rna.txt> <out.aa.txt>`
 
 # Crosslinking sites prediction
-After extracting the structural features, PxR3D adopts Random Forest to predict crosslinking nucleotides by `rf_crosslinkingnt.R` and crosslinking amino acids by `rf_crosslinkingAA.R `
+After extracting the structural features, PxR3D adopts Random Forest to predict crosslinking nucleotides by `PxR3d_nt.R` and crosslinking amino acids by `PxR3d_aa.R `
 
 The two R scripts depend on various functions wrapped in `functions.R` with a list of dependent R packages such as Caret for random foreast prediction. Please install these packages first before running the codes below. 
 1. Prediction of crosslinking nucleotides
-   
-    `Rscript rf_crosslinkingnt.R`
+    
+    `Rscript PxR3D_nt.R -v -f test.nt.plot.pdf -i example/featuretable.nt.txt -o test.nt.model.Rds`
 2. Prediction of crosslinking amino acids
    
-   `Rscript rf_crosslinkingAA.R`
+   `Rscript PxR3D_aa.R -v -f test.aa.plot.pdf -i example/featuretable.aa.txt -o test.aa.model.Rds`
 
 Please refer to example folder for the input format of the prediction. 
 
