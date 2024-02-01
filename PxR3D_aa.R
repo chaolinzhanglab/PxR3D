@@ -88,5 +88,5 @@ if(verbose){
 ### plot figures ###
 if(!is.null(plot.file)){
   set.seed(seed)
-  plotROCwithCI(rf.obj$fit$pred$obs, rf.obj$fit$pred$xl, plot.file = rocplot.file)
+  plotROCwithCI(rf.obj$fit$pred$obs, rf.obj$fit$pred$xl, plot.file = plot.file)
 }
