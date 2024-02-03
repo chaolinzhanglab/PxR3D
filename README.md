@@ -23,7 +23,7 @@ Please refer to https://x3dna.org for installation details.
 
 3. R packages
 
-The two R scripts depend on various functions wrapped in `functions.R` with a list of dependent R packages such as Caret for random foreast prediction. Please install these packages first before running the codes below.
+The two R scripts depend on various functions wrapped in `utils.R` with a list of dependent R packages such as Caret for random foreast prediction. Please install these packages first before running the codes below.
 
 # Structural feature extraction
 Protein-RNA structural feature extraction mainly uses `3dna2matrix_wrapper.pl`, which depends on DSSR and SNAP of the 3DNA tookit. 
