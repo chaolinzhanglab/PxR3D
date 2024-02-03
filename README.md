@@ -1,4 +1,4 @@
-# PxR3D - Structural-based prediction of protein-RNA photo-crosslinking sites
+# PxR3D-map - Structural-based prediction of protein-RNA photo-crosslinking sites
 
 PxR3D includes two parts: protein-RNA 3D structural feature extraction and crosslinking site prediction.
 
