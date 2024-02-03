@@ -28,7 +28,7 @@ The script requires PDB accession number as input and outputs the features relat
 
 The output files 'out.rna.txt' and 'out.aa.txt' are used to build the feature matrix. The crosslinking status of each nucleotide or amino acid needs to be added to train model for prediction. See examples/featuretable.nt.txt and examples/featuretable.aa.txt.
 
-## Crosslinking sites prediction
+## Crosslinking site prediction
 After extracting the structural features, PxR3D adopts Random Forest to predict crosslinking nucleotides by `PxR3D_nt.R` and crosslinking amino acids by `PxR3D_aa.R `
 
 1. Prediction of crosslinking nucleotides
