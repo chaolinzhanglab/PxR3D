@@ -45,7 +45,7 @@ Rscript PxR3D_nt.R -v -f test.nt.plot.pdf -i example/featuretable.nt.txt -o test
 Rscript PxR3D_aa.R -v -f test.aa.plot.pdf -i example/featuretable.aa.txt -o test.aa.model.Rds`
 ```
 
-Please refer to `example` folder for the input format of the prediction. 
+Please refer to `example` folder for the input format. 
 
 ### Citation
 H Feng, XJ Lu, L Liu, D Ustianenko, C Zhang. Structure-based prediction and characterization of photo-crosslinking in native protein-RNA complexes. bioRxiv,  2022.06. 02.494568
