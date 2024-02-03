@@ -36,13 +36,13 @@ After extracting the structural features, PxR3D adopts Random Forest to predict 
 #### Prediction of crosslinking nucleotides
     
 ```sh
-Rscript PxR3D_nt.R -v -f test.nt.plot.pdf -i example/featuretable.nt.txt -o test.nt.model.Rds`
+Rscript PxR3D_nt.R -v -f test.nt.plot.pdf -i example/featuretable.nt.txt -o test.nt.model.Rds
 ```
 
 #### Prediction of crosslinking amino acids
    
 ```sh
-Rscript PxR3D_aa.R -v -f test.aa.plot.pdf -i example/featuretable.aa.txt -o test.aa.model.Rds`
+Rscript PxR3D_aa.R -v -f test.aa.plot.pdf -i example/featuretable.aa.txt -o test.aa.model.Rds
 ```
 
 Please refer to `example` folder for the input format. 
