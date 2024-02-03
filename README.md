@@ -24,6 +24,7 @@ Once installed, specify the directory of 3DNA 'e.g., ~/tools/3dna' when running 
 
 `3dna2matrix_wrapper.pl [options] --3dna ~/tools/3dna <in.pdb> <out.rna.txt> <out.aa.txt>`
 
+The output files 'out.rna.txt' and 'out.aa.txt' were used to build the feature matrix and crosslink status of each nucleotide or amino acid will be added to train model for prediction. See examples/featuretable.nt.txt and examples/featuretable.aa.txt.
 
 ## Crosslinking sites prediction
 After extracting the structural features, PxR3D adopts Random Forest to predict crosslinking nucleotides by `PxR3D_nt.R` and crosslinking amino acids by `PxR3D_aa.R `
