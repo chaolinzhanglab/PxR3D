@@ -33,13 +33,13 @@ The output files 'out.rna.txt' and 'out.aa.txt' are used to build the feature ma
 ### Crosslinking site prediction
 After extracting the structural features, PxR3D adopts Random Forest to predict crosslinking nucleotides by `PxR3D_nt.R` and crosslinking amino acids by `PxR3D_aa.R `
 
-1. Prediction of crosslinking nucleotides
+#### Prediction of crosslinking nucleotides
     
 ```sh
 Rscript PxR3D_nt.R -v -f test.nt.plot.pdf -i example/featuretable.nt.txt -o test.nt.model.Rds`
 ```
 
-2. Prediction of crosslinking amino acids
+#### Prediction of crosslinking amino acids
    
 ```sh
 Rscript PxR3D_aa.R -v -f test.aa.plot.pdf -i example/featuretable.aa.txt -o test.aa.model.Rds`
