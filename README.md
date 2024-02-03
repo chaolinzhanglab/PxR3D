@@ -20,11 +20,13 @@ The two R scripts depend on various functions wrapped in `utils.R` with a list o
 ### Structural feature extraction
 Protein-RNA structural feature extraction mainly uses `3dna2matrix_wrapper.pl`, which depends on DSSR and SNAP of the 3DNA tookit. 
 
-when running `3dna2matirx_wrapper.pl`, specify the directory of 3DNA 'e.g., ~/tools/3dna'. 
+When running `3dna2matirx_wrapper.pl`, specify the directory of 3DNA 'e.g., ~/tools/3dna'. 
 
 The script requires PDB accession number as input and outputs the features related to amino acids and RNAs in the complex structure. 
 
-`3dna2matrix_wrapper.pl [options] --3dna ~/tools/3dna <in.pdb> <out.rna.txt> <out.aa.txt>`
+```sh
+3dna2matrix_wrapper.pl [options] --3dna ~/tools/3dna <in.pdb> <out.rna.txt> <out.aa.txt>
+```
 
 The output files 'out.rna.txt' and 'out.aa.txt' are used to build the feature matrix. The crosslinking status of each nucleotide or amino acid needs to be added to train the models for prediction. See examples/featuretable.nt.txt and examples/featuretable.aa.txt.
 
@@ -33,10 +35,15 @@ After extracting the structural features, PxR3D adopts Random Forest to predict 
 
 1. Prediction of crosslinking nucleotides
     
-    `Rscript PxR3D_nt.R -v -f test.nt.plot.pdf -i example/featuretable.nt.txt -o test.nt.model.Rds`
+```sh
+Rscript PxR3D_nt.R -v -f test.nt.plot.pdf -i example/featuretable.nt.txt -o test.nt.model.Rds`
+```
+
 2. Prediction of crosslinking amino acids
    
-   `Rscript PxR3D_aa.R -v -f test.aa.plot.pdf -i example/featuretable.aa.txt -o test.aa.model.Rds`
+```sh
+Rscript PxR3D_aa.R -v -f test.aa.plot.pdf -i example/featuretable.aa.txt -o test.aa.model.Rds`
+```
 
 Please refer to example folder for the input format of the prediction. 
 
