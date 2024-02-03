@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl
 
 use strict;
 use warnings;
@@ -21,14 +21,13 @@ my $verbose = 0;
 #my $modelNum = 1;
 my $keepCache = 0;
 
-my $CMD_dssr = "~/tools/3dna/x3dna-dssr.dms";
-my $CMD_snap = "~/tools/3dna/x3dna-snap.dms";
-
+my $CMD_3dna = "~/tools/3dna/";
 my $cache = MyConfig::getDefaultCache ($prog);
 
 GetOptions (
 #	"nmr:i"=>\$modelNum,
 	"c:s"=>\$cache,
+	"3dna:s"=>\$CMD_3dna,
 	"keep-cache"=>\$keepCache,
 	"v"=>\$verbose);
 
@@ -36,14 +35,17 @@ if (@ARGV != 3)
 {
 	print "$prog [options] <in.pdb> <out.rna.txt> <out.aa.txt>\n";
 #	print " --nmr [int]   : specify the number of models if nmr\n";
-	print " -c    [string]: cache dir ($cache)\n";
-	print " --keep-cache  : keep cache dir\n";
-	print " -v            : verbose\n";
+	print " --3dna [stirng]: path to 3DNA package\n";
+	print " -c     [string]: cache dir ($cache)\n";
+	print " --keep-cache   : keep cache dir\n";
+	print " -v             : verbose\n";
 	exit (1);
 }
 
 my ($pdbFile, $outRNAFile, $outAAFile) = @ARGV;
 
+my $CMD_dssr = "$CMD_3dna/x3dna-dssr.dms";
+my $CMD_snap = "$CMD_3dna/x3dna-snap.dms";
 
 my $ret = system ("mkdir $cache");
 Carp::croak "cannot create cache dir $cache\n" if $ret != 0;

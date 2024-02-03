@@ -837,7 +837,7 @@ extendrawdata <- function(rawdata){
   rawdata
 }
 
-get_closet_nt_rbp <- function(pdbid, pdb.mat){
+get_closest_nt_rbp <- function(pdbid, pdb.mat){
   file <- paste("raw/protein2rna/pdb", tolower(pdbid), ".interface.aa.txt", sep="")
   mat <- read.table(file, header=T, sep="\t", check.names = F, stringsAsFactors = F, comment.char = "", quote = "")
   mat$id_edited <- gsub("-", "",paste(mat$chain_id, mat$aa_id, sep="."))

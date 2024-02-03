@@ -1,4 +1,4 @@
-source("functions.R")
+source("utils.R")
 
 options(warn = -1)
 suppressMessages(library(getopt, quietly = T))
