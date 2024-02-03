@@ -4,16 +4,16 @@ PxR3D includes two parts: protein-RNA 3D structural feature extraction and cross
 
 ### Installation & prerequisites
 
-1. czplib
+- czplib
 
 Download and install the czplib perl library files: https://github.com/chaolinzhanglab/czplib
 
-2. 3DNA
+- 3DNA
 
 Please refer to https://x3dna.org for installation details.
 
 
-3. R packages
+- R packages
 
 The two R scripts depend on various functions wrapped in `utils.R` with a list of dependent R packages such as Caret for random foreast prediction. Please install these packages first before running the codes below.
 
