@@ -28,7 +28,7 @@ The script requires PDB accession number as input and outputs the features relat
 3dna2matrix_wrapper.pl [options] --3dna ~/tools/3dna <in.pdb> <out.rna.txt> <out.aa.txt>
 ```
 
-The output files 'out.rna.txt' and 'out.aa.txt' are used to build the feature matrix. The crosslinking status of each nucleotide or amino acid needs to be added to train the models for prediction. See examples/featuretable.nt.txt and examples/featuretable.aa.txt.
+The output files 'out.rna.txt' and 'out.aa.txt' are used to build the feature matrix. The crosslinking status of each nucleotide or amino acid needs to be added to train the models for prediction. See `examples/featuretable.nt.txt` and `examples/featuretable.aa.txt`.
 
 ### Crosslinking site prediction
 After extracting the structural features, PxR3D adopts Random Forest to predict crosslinking nucleotides by `PxR3D_nt.R` and crosslinking amino acids by `PxR3D_aa.R `
@@ -45,7 +45,7 @@ Rscript PxR3D_nt.R -v -f test.nt.plot.pdf -i example/featuretable.nt.txt -o test
 Rscript PxR3D_aa.R -v -f test.aa.plot.pdf -i example/featuretable.aa.txt -o test.aa.model.Rds`
 ```
 
-Please refer to example folder for the input format of the prediction. 
+Please refer to `example` folder for the input format of the prediction. 
 
 ### Citation
 H Feng, XJ Lu, L Liu, D Ustianenko, C Zhang. Structure-based prediction and characterization of photo-crosslinking in native protein-RNA complexes. bioRxiv,  2022.06. 02.494568
