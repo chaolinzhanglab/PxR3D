@@ -2,7 +2,7 @@
 
 PxR3D includes two parts: protein-RNA 3D structural feature extraction and crosslinking site prediction.
 
-## Installation
+## Installation & prerequisites
 
 1. czplib
 
